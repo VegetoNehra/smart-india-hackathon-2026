@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AlertTriangle, Calendar, Sprout, Droplets, ShieldAlert, Sparkles } from "lucide-react";
 import clsx from "clsx";
 
@@ -55,7 +55,16 @@ const texts = {
 
 export default function AdvisoryPage() {
   const [lang, setLang] = useState("en");
+  const [liveAdvisories, setLiveAdvisories] = useState([]);
+  
   const t = texts[lang];
+
+  useEffect(() => {
+    fetch('/api/v1/advisories')
+      .then(res => res.json())
+      .then(data => setLiveAdvisories(data))
+      .catch(err => console.error(err));
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,7 +88,7 @@ export default function AdvisoryPage() {
           <button 
             onClick={() => setLang("en")}
             className={clsx(
-              "font-mono text-[10.5px] px-3.5 py-1 rounded-full cursor-pointer transition-colors",
+              "font-mono text-[10.5px] px-3.5 py-1 rounded-full cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
               lang === "en" ? "bg-text-hi text-white font-semibold" : "text-text-mid hover:text-text-hi"
             )}
           >
@@ -88,7 +97,7 @@ export default function AdvisoryPage() {
           <button 
             onClick={() => setLang("hi")}
             className={clsx(
-              "font-mono text-[10.5px] px-3.5 py-1 rounded-full cursor-pointer transition-colors",
+              "font-mono text-[10.5px] px-3.5 py-1 rounded-full cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
               lang === "hi" ? "bg-text-hi text-white font-semibold" : "text-text-mid hover:text-text-hi"
             )}
           >
@@ -127,6 +136,23 @@ export default function AdvisoryPage() {
               <AdvisorySpec label="Confidence" val={t.confidence} highlight />
             </div>
           </div>
+
+          {/* Live API Advisories */}
+          {liveAdvisories.length > 0 && (
+            <div className="flex flex-col gap-3 mt-2 mb-2">
+              <span className="font-mono text-[10px] tracking-[.1em] text-violet-500 uppercase">Live Database Alerts</span>
+              {liveAdvisories.map(adv => (
+                <div key={adv.id} className="glass-panel p-4 border-l-4 border-rose-500 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-mono text-[10px] bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full uppercase">{adv.advisory_type} - {adv.crop}</span>
+                    <span className="font-mono text-[9px] text-text-lo">{new Date(adv.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <h4 className="font-display font-semibold text-text-hi text-[15px]">{adv.title}</h4>
+                  <p className="text-[13px] text-text-mid leading-relaxed">{adv.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Sub advisory crop grids */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

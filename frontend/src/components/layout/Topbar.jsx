@@ -1,7 +1,40 @@
-import React from "react";
-import { Search } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { MapPin } from "lucide-react";
+import SearchableSelect from "../common/SearchableSelect";
 
-export default function Topbar() {
+export default function Topbar({
+  states = [],
+  districts = [],
+  selectedStateId,
+  selectedDistrictId,
+  onStateChange,
+  onDistrictChange
+}) {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date) => {
+    // Format: Sat, 27 Sep 2024
+    const datePart = date.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+    // Format: 09:00:00
+    const timePart = date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    });
+    return `${datePart} · IST ${timePart}`;
+  };
+
   return (
     <div className="flex items-center justify-between gap-5 flex-wrap">
       <div>
@@ -14,18 +47,28 @@ export default function Topbar() {
         </h1>
       </div>
       
-      <div className="flex items-center gap-3">
-        <div className="bg-glass-fill border border-glass-borderSoft backdrop-blur-[20px] rounded-full py-2.5 px-4.5 flex items-center gap-2.5 text-text-mid">
-          <Search size={15} className="opacity-60" />
-          <input 
-            type="text" 
-            placeholder="Search district, state…" 
-            defaultValue="Marathwada, MH"
-            className="bg-transparent border-none outline-none text-text-hi text-[13.5px] w-[120px] font-sans placeholder-text-lo"
+      <div className="flex items-center gap-4.5">
+        {/* State selection searchable dropdown */}
+        <div className="flex items-center gap-2">
+          <MapPin size={14} className="text-violet-500 shrink-0" />
+          <SearchableSelect 
+            options={states}
+            value={selectedStateId}
+            onChange={onStateChange}
+            placeholder="Select State"
           />
         </div>
+
+        {/* District selection searchable dropdown */}
+        <SearchableSelect 
+          options={districts}
+          value={selectedDistrictId}
+          onChange={onDistrictChange}
+          placeholder="Select District"
+        />
+
         <div className="bg-glass-fill border border-glass-borderSoft backdrop-blur-[20px] rounded-full py-2.5 px-4.5 text-[13.5px] text-text-mid font-sans flex items-center h-full">
-          Sat, 27 Sep 2024 · IST 09:00
+          {formatTime(time)}
         </div>
       </div>
     </div>

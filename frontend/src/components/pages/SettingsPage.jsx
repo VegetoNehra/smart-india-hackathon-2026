@@ -1,8 +1,16 @@
 import React, { useState } from "react";
 import { Check, Settings, ShieldCheck, MapPin, Bell, Globe, LayoutGrid } from "lucide-react";
 import clsx from "clsx";
+import SearchableSelect from "../common/SearchableSelect";
 
-export default function SettingsPage() {
+export default function SettingsPage({
+  states = [],
+  districts = [],
+  selectedStateId,
+  selectedDistrictId,
+  onStateChange,
+  onDistrictChange
+}) {
   const [lang, setLang] = useState("en");
   const [density, setDensity] = useState("compact");
   const [techInfo, setTechInfo] = useState(true);
@@ -43,10 +51,28 @@ export default function SettingsPage() {
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
-              <SelectBox label="State" defaultValue="Uttar Pradesh" options={["Uttar Pradesh", "Maharashtra", "Karnataka", "Punjab"]} />
-              <SelectBox label="District" defaultValue="Meerut" options={["Meerut", "Pune", "Nashik", "Belagavi"]} />
-              <SelectBox label="Block" defaultValue="Block A" options={["Block A", "Block B", "Block C"]} />
-              <SelectBox label="Panchayat" defaultValue="Panchayat X" options={["Panchayat X", "Panchayat Y", "Panchayat Z"]} />
+              <div className="flex flex-col gap-1.5 font-sans">
+                <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">State</label>
+                <SearchableSelect 
+                  options={states}
+                  value={selectedStateId}
+                  onChange={onStateChange}
+                  placeholder="Select State"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 font-sans">
+                <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">District</label>
+                <SearchableSelect 
+                  options={districts}
+                  value={selectedDistrictId}
+                  onChange={onDistrictChange}
+                  placeholder="Select District"
+                />
+              </div>
+
+              <SelectBox label="Block" defaultValue="Block A" options={["Block A"]} />
+              <SelectBox label="Panchayat" defaultValue="Panchayat X" options={["Panchayat X"]} />
             </div>
           </div>
 
@@ -94,7 +120,7 @@ export default function SettingsPage() {
                     key={l}
                     onClick={() => setLang(l)}
                     className={clsx(
-                      "font-mono text-[10px] px-3 py-1 rounded-full cursor-pointer transition-colors border",
+                      "font-mono text-[10px] px-3 py-1 rounded-full cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 border",
                       lang === l 
                         ? "bg-text-hi text-white border-transparent" 
                         : "bg-glass-fill2 border-glass-borderSoft text-text-mid hover:text-text-hi"
@@ -115,7 +141,7 @@ export default function SettingsPage() {
                     key={d}
                     onClick={() => setDensity(d)}
                     className={clsx(
-                      "font-mono text-[10px] px-3 py-1 rounded-full cursor-pointer transition-colors border",
+                      "font-mono text-[10px] px-3 py-1 rounded-full cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 border",
                       density === d 
                         ? "bg-text-hi text-white border-transparent" 
                         : "bg-glass-fill2 border-glass-borderSoft text-text-mid hover:text-text-hi"
@@ -144,7 +170,7 @@ function SelectBox({ label, defaultValue, options }) {
       <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">{label}</label>
       <select 
         defaultValue={defaultValue} 
-        className="w-full bg-glass-fill2 border border-glass-borderSoft px-3 py-2 text-[13.5px] text-text-hi rounded-xl outline-none"
+        className="w-full bg-glass-fill2 border border-glass-borderSoft px-3 py-2 text-[13.5px] text-text-hi rounded-xl outline-none transition-all duration-200 hover:bg-glass-fill focus:ring-2 focus:ring-violet-500/50 focus:border-transparent cursor-pointer"
       >
         {options.map((opt) => (
           <option key={opt} value={opt}>{opt}</option>
@@ -161,7 +187,7 @@ function ToggleRow({ label, active, onClick }) {
       <button 
         onClick={onClick}
         className={clsx(
-          "w-10 h-6.5 rounded-full p-1 cursor-pointer transition-colors duration-250 relative",
+          "w-10 h-6.5 rounded-full p-1 cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 relative",
           active ? "bg-teal-500" : "bg-black/10"
         )}
       >

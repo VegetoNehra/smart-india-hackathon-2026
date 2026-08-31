@@ -1,90 +1,100 @@
-import React from "react";
-import clsx from "clsx";
+import React, { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-export default function RiskMap() {
+export default function RiskMap({ selectedRegion }) {
+  const mapContainerRef = useRef(null);
+  const leafletMapRef = useRef(null);
+  const markerRef = useRef(null);
+
+  // Initialize the Leaflet map container
+  useEffect(() => {
+    if (mapContainerRef.current && !leafletMapRef.current) {
+      leafletMapRef.current = L.map(mapContainerRef.current, {
+        center: [20.5937, 78.9629],
+        zoom: 5,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20
+      }).addTo(leafletMapRef.current);
+    }
+
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update center, zoom, and glow marker whenever selected location changes
+  useEffect(() => {
+    if (!leafletMapRef.current || !selectedRegion || !selectedRegion.lat || !selectedRegion.lng) return;
+
+    const map = leafletMapRef.current;
+
+    // Clear previous marker instance
+    if (markerRef.current) {
+      markerRef.current.remove();
+    }
+
+    // Pan map to the newly selected region
+    const zoomLevel = selectedRegion.level === "District" ? 8 : 6;
+    map.setView([selectedRegion.lat, selectedRegion.lng], zoomLevel, { animate: true });
+
+    // Derive risk color based on forecasts
+    let riskColor = "#10b981"; // Low (emerald)
+    const latestForecast = selectedRegion.forecasts && selectedRegion.forecasts.length > 0 ? selectedRegion.forecasts[0] : null;
+    const heavyRain = latestForecast ? Math.round(latestForecast.heavy_rain_prob * 100) : 0;
+    
+    if (heavyRain > 75) riskColor = "#ef4444"; // Extreme (rose)
+    else if (heavyRain > 50) riskColor = "#fb923c"; // High (orange)
+    else if (heavyRain > 25) riskColor = "#f59e0b"; // Moderate (amber)
+
+    // Plot a pulsing glowing circle marker
+    markerRef.current = L.circleMarker([selectedRegion.lat, selectedRegion.lng], {
+      radius: 12,
+      fillColor: riskColor,
+      color: "#8b5cf6", // Highlight with violet border
+      weight: 3,
+      fillOpacity: 0.9,
+    }).addTo(map);
+
+    // Open automatic station info tooltip
+    markerRef.current.bindTooltip(`
+      <div style="font-family: monospace; font-size: 11px; padding: 2px;">
+        <strong>${selectedRegion.name} Station</strong><br/>
+        Telemetry Sync Active
+      </div>
+    `, { direction: 'top', offset: [0, -5] }).openTooltip();
+
+  }, [selectedRegion]);
+
   return (
-    <div className="glass-panel p-[22px] flex flex-col gap-3.5 h-full min-h-[300px]">
+    <div className="glass-panel p-[22px] flex flex-col gap-3.5 h-full min-h-[350px]">
       <div className="flex justify-between items-center">
-        <span className="panel-label">Map View · Rainfall Probability Overlay</span>
-        <div className="flex gap-1.5">
-          <MapToggle active>7D</MapToggle>
-          <MapToggle>14D</MapToggle>
-          <MapToggle>21D</MapToggle>
-          <MapToggle>30D</MapToggle>
+        <span className="panel-label">Geospatial Radar · Selected Location Station</span>
+        <div className="font-mono text-[10.5px] text-text-mid bg-glass-fill border border-glass-borderSoft rounded-full px-3 py-1 font-semibold">
+          {selectedRegion?.name || "India Overview"}
         </div>
       </div>
       
-      <div className="flex-1 rounded-[16px] relative overflow-hidden border border-glass-borderSoft bg-gradient-to-br from-[#eef7ff] via-[#dcecfb] to-[#f8fbff]">
-        {/* Grid Background */}
-        <div 
-          className="absolute inset-0 opacity-50"
-          style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
-            backgroundSize: "30px 30px"
-          }}
-        ></div>
-        
-        {/* Dummy SVG Map */}
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 900 430" preserveAspectRatio="none" aria-label="Dummy climate zone map">
-          <path d="M350 38 L430 58 L505 45 L574 82 L635 72 L698 115 L742 166 L720 222 L756 270 L706 308 L671 357 L624 392 L579 351 L540 318 L500 278 L451 247 L411 215 L372 184 L345 139 L315 103 Z" fill="#dfeaf5" stroke="#7c9bb9" strokeWidth="3"/>
-          <path d="M350 38 L430 58 L505 45 L574 82 L550 128 L490 143 L426 123 L365 104 L315 103 Z" fill="#4b8fe8" fillOpacity=".78" stroke="#fff" strokeWidth="2"/>
-          <path d="M365 104 L426 123 L490 143 L550 128 L594 160 L568 214 L510 205 L451 185 L411 150 Z" fill="#34b96b" fillOpacity=".78" stroke="#fff" strokeWidth="2"/>
-          <path d="M594 160 L635 152 L698 115 L742 166 L720 222 L756 270 L706 308 L671 270 L635 235 L568 214 Z" fill="#ef6262" fillOpacity=".80" stroke="#fff" strokeWidth="2"/>
-          <path d="M451 185 L510 205 L568 214 L635 235 L671 270 L624 320 L579 286 L540 250 L500 232 Z" fill="#4b8fe8" fillOpacity=".72" stroke="#fff" strokeWidth="2"/>
-          <path d="M540 250 L579 286 L624 320 L671 357 L624 392 L579 351 L540 318 L500 278 Z" fill="#34b96b" fillOpacity=".76" stroke="#fff" strokeWidth="2"/>
-          <g fill="none" stroke="#fff" strokeOpacity=".72" strokeWidth="1.5">
-            <path d="M426 123 L411 150 L451 185"/>
-            <path d="M490 143 L510 205 L500 232"/>
-            <path d="M550 128 L568 214 L540 250"/>
-            <path d="M594 160 L568 214 L635 235"/>
-            <path d="M579 286 L624 320"/>
-            <path d="M635 235 L671 270"/>
-          </g>
-          <g className="font-sans text-[13px] font-bold fill-[#17324f]">
-            <text x="390" y="93">NORTH</text>
-            <text x="447" y="168">STABLE</text>
-            <text x="645" y="195">HIGH RAIN</text>
-            <text x="548" y="300">FAVOURABLE</text>
-          </g>
-        </svg>
-
-        {/* Pins */}
-        <MapPin top="32%" left="28%" color="var(--color-violet-500)" label="Meerut · 78%" />
-        <MapPin top="55%" left="62%" color="var(--color-teal-500)" label="Block A · 62%" />
-        <MapPin top="68%" left="38%" color="var(--color-amber-500)" label="Block B · 41%" />
+      {/* Map visualizer container */}
+      <div className="flex-1 rounded-[16px] relative overflow-hidden border border-glass-borderSoft min-h-[250px] bg-[#f8fbff]">
+        <div ref={mapContainerRef} className="w-full h-full absolute inset-0" style={{ zIndex: 0 }}></div>
       </div>
 
-      <div className="flex gap-4 font-mono text-[10px] text-text-lo">
-        <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-violet-500"></i> Onset likely</span>
-        <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-teal-500"></i> Stable</span>
-        <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-amber-500"></i> Heavy rain risk</span>
-      </div>
-    </div>
-  );
-}
-
-function MapToggle({ children, active }) {
-  return (
-    <button className={clsx(
-      "font-mono text-[10.5px] px-3 py-1.5 rounded-full border tracking-[.04em] cursor-pointer transition-colors",
-      active 
-        ? "bg-gradient-to-br from-violet-500 to-violet-soft text-white border-transparent" 
-        : "bg-glass-fill2 border-glass-borderSoft text-text-mid hover:text-text-hi"
-    )}>
-      {children}
-    </button>
-  );
-}
-
-function MapPin({ top, left, color, label }) {
-  return (
-    <div className="absolute z-10 flex flex-col items-center gap-1 group" style={{ top, left }}>
-      <div className="relative flex items-center justify-center">
-        <div className="absolute w-[11px] h-[11px] rounded-full animate-[ping_2.4s_infinite_ease-out] opacity-70" style={{ backgroundColor: color }}></div>
-        <div className="w-[11px] h-[11px] rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.06)] relative z-10" style={{ backgroundColor: color }}></div>
-      </div>
-      <div className="font-mono text-[9.5px] bg-[rgba(255,255,255,0.72)] text-text-hi backdrop-blur-[12px] py-0.5 px-2 rounded-[6px] border border-glass-borderSoft whitespace-nowrap mt-1 group-hover:scale-105 transition-transform">
-        {label}
+      <div className="flex gap-4 font-mono text-[10px] text-text-lo items-center justify-between">
+        <div className="flex gap-4">
+          <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#10b981" }}></i> Low Risk</span>
+          <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#f59e0b" }}></i> Moderate</span>
+          <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#fb923c" }}></i> High</span>
+          <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#ef4444" }}></i> Extreme</span>
+        </div>
+        <div className="text-[9.5px]">Live telemetry sync</div>
       </div>
     </div>
   );

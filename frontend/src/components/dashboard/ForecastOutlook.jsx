@@ -1,24 +1,46 @@
 import React from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-const data = [
-  { name: '7D', onset: 78, break: 34, heavy: 42 },
-  { name: '14D', onset: 71, break: 61, heavy: 44 },
-  { name: '21D', onset: 64, break: 58, heavy: 52 },
-  { name: '30D', onset: 53, break: 47, heavy: 48 },
-];
+export default function ForecastOutlook({ liveForecast }) {
+  const probs = liveForecast?.probabilities;
 
-export default function ForecastOutlook() {
+  const chartData = [
+    {
+      name: '7D',
+      onset: probs?.onset?.['7d'] ?? 12,
+      break: probs?.break_spell?.['7d'] ?? 85,
+      heavy: probs?.heavy_rain?.['7d'] ?? 4
+    },
+    {
+      name: '14D',
+      onset: probs?.onset?.['14d'] ?? 30,
+      break: probs?.break_spell?.['14d'] ?? 100,
+      heavy: probs?.heavy_rain?.['14d'] ?? 8
+    },
+    {
+      name: '21D',
+      onset: probs?.onset?.['21d'] ?? 45,
+      break: probs?.break_spell?.['21d'] ?? 100,
+      heavy: probs?.heavy_rain?.['21d'] ?? 12
+    },
+    {
+      name: '30D',
+      onset: probs?.onset?.['30d'] ?? 62,
+      break: probs?.break_spell?.['30d'] ?? 100,
+      heavy: probs?.heavy_rain?.['30d'] ?? 15
+    },
+  ];
+
   return (
     <div className="glass-panel p-[22px] flex flex-col gap-4 w-full h-[320px]">
       <div className="flex justify-between items-center">
         <h2 className="font-display text-[16px] font-semibold">Monsoon Outlook</h2>
-        <span className="panel-label">Probability Trend</span>
+        <span className="panel-label">Phase 3B Calibrated Probabilities</span>
       </div>
       
       <div className="flex-1 w-full -ml-4">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorOnset" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
@@ -37,7 +59,7 @@ export default function ForecastOutlook() {
               labelStyle={{ fontFamily: 'Space Grotesk', fontWeight: 600, color: '#10233f' }}
             />
             <Area type="monotone" dataKey="onset" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#colorOnset)" name="Onset %" />
-            <Area type="monotone" dataKey="break" stroke="#e11d48" strokeWidth={2} fillOpacity={1} fill="url(#colorBreak)" name="Break %" />
+            <Area type="monotone" dataKey="break" stroke="#e11d48" strokeWidth={2} fillOpacity={1} fill="url(#colorBreak)" name="Break Spell %" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

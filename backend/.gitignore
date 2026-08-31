@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+monsoon.db
+.env
+data/*.grd
+data/rainfall in india 1901-2015.csv
