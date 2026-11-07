@@ -1,7 +1,9 @@
 import React from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function ForecastOutlook({ liveForecast }) {
+  const { t } = useLanguage();
   const probs = liveForecast?.probabilities;
 
   const chartData = [
@@ -32,10 +34,10 @@ export default function ForecastOutlook({ liveForecast }) {
   ];
 
   return (
-    <div className="glass-panel p-[22px] flex flex-col gap-4 w-full h-[320px]">
+    <div className="glass-panel p-5.5 flex flex-col gap-4 w-full h-80">
       <div className="flex justify-between items-center">
-        <h2 className="font-display text-[16px] font-semibold">Monsoon Outlook</h2>
-        <span className="panel-label">Phase 3B Calibrated Probabilities</span>
+        <h2 className="font-display text-[16px] font-semibold">{t("outlook_title", "Monsoon Outlook")}</h2>
+        <span className="panel-label">{t("outlook_subtitle", "Phase 3B Calibrated Probabilities")}</span>
       </div>
       
       <div className="flex-1 w-full -ml-4">
@@ -58,8 +60,8 @@ export default function ForecastOutlook({ liveForecast }) {
               itemStyle={{ fontFamily: 'Inter', fontSize: '13px' }}
               labelStyle={{ fontFamily: 'Space Grotesk', fontWeight: 600, color: '#10233f' }}
             />
-            <Area type="monotone" dataKey="onset" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#colorOnset)" name="Onset %" />
-            <Area type="monotone" dataKey="break" stroke="#e11d48" strokeWidth={2} fillOpacity={1} fill="url(#colorBreak)" name="Break Spell %" />
+            <Area type="monotone" dataKey="onset" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#colorOnset)" name={t("area_onset", "Onset %")} />
+            <Area type="monotone" dataKey="break" stroke="#e11d48" strokeWidth={2} fillOpacity={1} fill="url(#colorBreak)" name={t("area_break", "Break Spell %")} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

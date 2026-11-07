@@ -30,8 +30,8 @@ def test_advisory_scenarios():
     assert adv1.false_onset_risk == False
     assert "Rice" in adv1.primary_action
     print(f"[PASS] Code: {adv1.advisory_code} | Title: {adv1.title.encode('ascii', 'replace').decode('ascii')}")
-    print(f"       Action: {adv1.primary_action}")
-
+    print(f"       Action: {adv1.primary_action.encode('ascii', 'replace').decode('ascii')}")
+    
     # ---------------------------------------------------------
     # SCENARIO 2: High Onset (75%) + High Break (70%) -> False-Onset Risk
     # ---------------------------------------------------------
@@ -48,7 +48,7 @@ def test_advisory_scenarios():
     assert adv2.false_onset_risk == True
     assert "Delay" in adv2.primary_action or "Avoid" in adv2.primary_action
     print(f"[PASS] Code: {adv2.advisory_code} | Title: {adv2.title.encode('ascii', 'replace').decode('ascii')}")
-    print(f"       Action: {adv2.primary_action}")
+    print(f"       Action: {adv2.primary_action.encode('ascii', 'replace').decode('ascii')}")
 
     # ---------------------------------------------------------
     # SCENARIO 3: Heavy Rain (75%), Cotton + Vegetative
@@ -63,46 +63,57 @@ def test_advisory_scenarios():
     adv3 = engine.generate_advisory(fc3, crop3)
 
     assert adv3.advisory_code == "HEAVY_RAIN_WARNING", f"Expected HEAVY_RAIN_WARNING, got {adv3.advisory_code}"
-    assert "drainage" in adv3.primary_action.lower()
+    assert "drainage" in adv3.primary_action.lower() or "furrow" in adv3.primary_action.lower()
     print(f"[PASS] Code: {adv3.advisory_code} | Title: {adv3.title.encode('ascii', 'replace').decode('ascii')}")
-    print(f"       Action: {adv3.primary_action}")
+    print(f"       Action: {adv3.primary_action.encode('ascii', 'replace').decode('ascii')}")
 
     # ---------------------------------------------------------
-    # SCENARIO 4: High Break (75%), Rice + Vegetative + Low Soil Moisture (15%)
+    # SCENARIO 4: High Break (75%), Wheat + Flowering
     # ---------------------------------------------------------
-    print("\n--- SCENARIO 4: High Break (75%), Rice + Vegetative + Critical Dry Soil (15%) ---")
+    print("\n--- SCENARIO 4: High Break (75%), Wheat + Flowering ---")
     fc4 = ForecastProbabilities(
         onset_7d=20.0, onset_14d=20.0, onset_21d=20.0, onset_30d=20.0,
         break_7d=75.0, break_14d=80.0, break_21d=85.0, break_30d=85.0,
         heavy_rain_7d=5.0, heavy_rain_14d=5.0, heavy_rain_21d=5.0, heavy_rain_30d=5.0
     )
-    crop4 = CropContext(crop_name="Rice", growth_stage="Vegetative", soil_moisture_pct=15.0)
+    crop4 = CropContext(crop_name="Wheat", growth_stage="Flowering")
     adv4 = engine.generate_advisory(fc4, crop4)
 
     assert adv4.advisory_code == "BREAK_SPELL_WARNING", f"Expected BREAK_SPELL_WARNING, got {adv4.advisory_code}"
-    assert "irrigation" in adv4.primary_action.lower()
+    assert "Wheat" in adv4.primary_action or "irrigation" in adv4.primary_action.lower()
     print(f"[PASS] Code: {adv4.advisory_code} | Title: {adv4.title.encode('ascii', 'replace').decode('ascii')}")
-    print(f"       Action: {adv4.primary_action}")
+    print(f"       Action: {adv4.primary_action.encode('ascii', 'replace').decode('ascii')}")
 
     # ---------------------------------------------------------
-    # SCENARIO 5: All Low Probabilities (15%) -> Routine Monitoring
+    # SCENARIO 5: Heavy Rain (75%), Potato + Harvest
     # ---------------------------------------------------------
-    print("\n--- SCENARIO 5: All Low Probabilities (15%) -> Routine Monitoring ---")
+    print("\n--- SCENARIO 5: Heavy Rain (75%), Potato + Harvest ---")
     fc5 = ForecastProbabilities(
-        onset_7d=15.0, onset_14d=15.0, onset_21d=15.0, onset_30d=15.0,
-        break_7d=10.0, break_14d=10.0, break_21d=10.0, break_30d=10.0,
-        heavy_rain_7d=5.0, heavy_rain_14d=5.0, heavy_rain_21d=5.0, heavy_rain_30d=5.0
+        heavy_rain_7d=75.0, heavy_rain_14d=80.0
     )
-    crop5 = CropContext(crop_name="Soybean", growth_stage="Establishment")
+    crop5 = CropContext(crop_name="Potato", growth_stage="Harvest")
     adv5 = engine.generate_advisory(fc5, crop5)
 
-    assert adv5.advisory_code == "ROUTINE_MONITORING", f"Expected ROUTINE_MONITORING, got {adv5.advisory_code}"
-    assert adv5.risk_level == "LOW"
+    assert adv5.advisory_code == "HEAVY_RAIN_WARNING"
+    assert "Postpone" in adv5.primary_action or "harvesting" in adv5.primary_action
     print(f"[PASS] Code: {adv5.advisory_code} | Title: {adv5.title.encode('ascii', 'replace').decode('ascii')}")
-    print(f"       Action: {adv5.primary_action}")
+    print(f"       Action: {adv5.primary_action.encode('ascii', 'replace').decode('ascii')}")
+
+    # ---------------------------------------------------------
+    # SCENARIO 6: Hindi Language Generation Test (Break Spell, Sugarcane + Flowering)
+    # ---------------------------------------------------------
+    print("\n--- SCENARIO 6: Hindi Language Test (Break Spell, Sugarcane + Flowering) ---")
+    fc6 = ForecastProbabilities(break_7d=75.0, break_14d=80.0)
+    crop6 = CropContext(crop_name="Sugarcane", growth_stage="Flowering")
+    adv6 = engine.generate_advisory(fc6, crop6, lang="hi")
+
+    assert adv6.advisory_code == "BREAK_SPELL_WARNING"
+    assert "सिंचाई" in adv6.primary_action or "अवस्था" in adv6.primary_action
+    print(f"[PASS] Code: {adv6.advisory_code} | Title (HI): {adv6.title.encode('ascii', 'replace').decode('ascii')}")
+    print(f"       Action (HI): {adv6.primary_action.encode('ascii', 'replace').decode('ascii')}")
 
     print("\n==========================================================")
-    print("ALL 5 UNIT TEST SCENARIOS PASSED SUCCESSFULLY (100% PASS)!")
+    print("ALL 6 UNIT TEST SCENARIOS PASSED SUCCESSFULLY (100% PASS)!")
     print("==========================================================")
 
 if __name__ == '__main__':

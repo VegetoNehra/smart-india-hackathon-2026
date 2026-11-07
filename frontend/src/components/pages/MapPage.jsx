@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import clsx from "clsx";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useLanguage } from "../../context/LanguageContext";
+import { getApiUrl } from "../../api/config";
 
 export default function MapPage({
   selectedStateId,
@@ -9,6 +11,7 @@ export default function MapPage({
   onStateChange,
   onDistrictChange
 }) {
+  const { t } = useLanguage();
   const [timeframe, setTimeframe] = useState("7D");
   const [overlay, setOverlay] = useState("ONSET");
   const [regions, setRegions] = useState([]);
@@ -25,7 +28,7 @@ export default function MapPage({
 
   // 1. Fetch live data from FastAPI backend
   useEffect(() => {
-    fetch('/api/v1/regions')
+    fetch(getApiUrl('/api/v1/regions'))
       .then(res => res.json())
       .then(data => {
         const formattedRegions = data.map((r) => {
@@ -69,7 +72,6 @@ export default function MapPage({
   // 2. Initialize Leaflet Map Instance
   useEffect(() => {
     if (!loading && mapContainerRef.current && !leafletMapRef.current) {
-      // Center on India
       leafletMapRef.current = L.map(mapContainerRef.current, {
         center: [20.5937, 78.9629],
         zoom: 5,
@@ -77,12 +79,11 @@ export default function MapPage({
         attributionControl: false
       });
 
-      // Scale-invariant high-contrast light tiles
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 20
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(leafletMapRef.current);
 
-      // Re-position zoom controls to bottom-right
       L.control.zoom({ position: 'bottomright' }).addTo(leafletMapRef.current);
     }
 
@@ -100,7 +101,6 @@ export default function MapPage({
 
     const map = leafletMapRef.current;
 
-    // Clear previous markers
     Object.values(markersRef.current).forEach(marker => marker.remove());
     markersRef.current = {};
 
@@ -114,16 +114,14 @@ export default function MapPage({
 
       const isSelected = selectedRegion?.id === region.id;
 
-      // Draw custom glowing circle marker
       const marker = L.circleMarker([region.lat, region.lng], {
         radius: isSelected ? 12 : 8,
         fillColor: region.color,
-        color: isSelected ? "#8b5cf6" : "#ffffff", // Highlight selected with violet border
+        color: isSelected ? "#8b5cf6" : "#ffffff",
         weight: isSelected ? 3 : 1.5,
         fillOpacity: isSelected ? 0.95 : 0.75,
       }).addTo(map);
 
-      // Hover tooltip
       marker.bindTooltip(`
         <div style="font-family: monospace; font-size: 11px; padding: 2px;">
           <strong>${region.name}</strong> (${region.parent})<br/>
@@ -131,7 +129,6 @@ export default function MapPage({
         </div>
       `, { direction: 'top', offset: [0, -5] });
 
-      // Click to select - updates global location context
       marker.on('click', () => {
         if (region.level === "District") {
           onStateChange(region.parent_id);
@@ -144,7 +141,6 @@ export default function MapPage({
       markersRef.current[region.id] = marker;
     });
 
-    // Auto-focus selected region
     if (selectedRegion && selectedRegion.lat && selectedRegion.lng) {
       map.setView([selectedRegion.lat, selectedRegion.lng], 6, { animate: true });
     }
@@ -170,9 +166,9 @@ export default function MapPage({
         <div className="flex justify-between items-end flex-wrap gap-4">
           <div>
             <h1 className="font-display font-semibold text-[27px] tracking-[-0.01em] text-text-hi">
-              MONSOON RISK MAP
+              {t("map_page_title", "MONSOON RISK MAP")}
             </h1>
-            <p className="text-text-mid text-[14px]">Zoom, pan, and hover circles to analyze climate risk anomalies</p>
+            <p className="text-text-mid text-[14px]">{t("map_page_desc", "Zoom, pan, and hover circles to analyze climate risk anomalies")}</p>
           </div>
           <div className="bg-glass-fill border border-glass-borderSoft backdrop-blur-[20px] rounded-full py-2 px-4.5 text-[13.5px] text-text-hi font-medium">
             Live OpenStreetMap Feed
@@ -188,18 +184,18 @@ export default function MapPage({
           {/* Controls */}
           <div className="flex justify-between items-center flex-wrap gap-3">
             <div className="flex gap-1.5">
-              {["7D", "14D", "21D", "30D"].map((t) => (
+              {["7D", "14D", "21D", "30D"].map((tStr) => (
                 <button
-                  key={t}
-                  onClick={() => setTimeframe(t)}
+                  key={tStr}
+                  onClick={() => setTimeframe(tStr)}
                   className={clsx(
                     "font-mono text-[10.5px] px-3.5 py-1.5 rounded-full border tracking-[.04em] cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
-                    timeframe === t 
+                    timeframe === tStr 
                       ? "bg-gradient-to-br from-violet-500 to-violet-soft text-white border-transparent shadow-[0_2px_8px_rgba(139,124,246,0.2)]" 
                       : "bg-glass-fill2 border-glass-borderSoft text-text-mid hover:text-text-hi"
                   )}
                 >
-                  {t === "7D" ? "7 DAYS" : t === "14D" ? "14 DAYS" : t === "21D" ? "21 DAYS" : "30 DAYS"}
+                  {tStr}
                 </button>
               ))}
             </div>
@@ -216,13 +212,13 @@ export default function MapPage({
                       : "bg-glass-fill2 border-glass-borderSoft text-text-mid hover:text-text-hi"
                   )}
                 >
-                  {o}
+                  {o === "ONSET" ? t("area_onset", "ONSET") : o === "BREAK SPELL" ? t("area_break", "BREAK SPELL") : t("metric_heavy_7d", "HEAVY RAIN")}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Interactive Map Visual (Leaflet Container) */}
+          {/* Interactive Map Visual */}
           <div 
             ref={mapContainerRef} 
             className="w-full h-[400px] rounded-[16px] border border-glass-borderSoft bg-[#f8fbff] relative" 
@@ -230,11 +226,11 @@ export default function MapPage({
           ></div>
 
           {/* Map Legend */}
-          <div className="flex gap-4 font-mono text-[10px] text-text-lo justify-between items-center">
+          <div className="flex gap-4 font-mono text-[10px] text-text-lo justify-between items-center flex-wrap">
             <div className="flex gap-4">
-              <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#10b981" }}></i> Low Risk</span>
-              <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#f59e0b" }}></i> Moderate</span>
-              <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#fb923c" }}></i> High</span>
+              <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#10b981" }}></i> {t("risk_low", "Low Risk")}</span>
+              <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#f59e0b" }}></i> {t("risk_moderate", "Moderate")}</span>
+              <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#fb923c" }}></i> {t("risk_high", "High")}</span>
               <span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ backgroundColor: "#ef4444" }}></i> Extreme</span>
             </div>
             <div className="text-[9.5px]">Click or hover nodes to inspect block-level advisories</div>
@@ -254,9 +250,9 @@ export default function MapPage({
               </span>
 
               <div className="flex flex-col gap-4.5 border-t border-glass-borderSoft pt-5">
-                <RegionMetric label="Onset Likelihood" val={`${selectedRegion.onset}%`} />
-                <RegionMetric label="Break spell Risk" val={`${selectedRegion.breakRisk}%`} />
-                <RegionMetric label="Heavy Rain Prob." val={`${selectedRegion.heavyRain}%`} />
+                <RegionMetric label={t("hero_onset_label", "Onset Likelihood")} val={`${selectedRegion.onset}%`} />
+                <RegionMetric label={t("kpi_break_label", "Break spell Risk")} val={`${selectedRegion.breakRisk}%`} />
+                <RegionMetric label={t("kpi_heavy_label", "Heavy Rain Prob.")} val={`${selectedRegion.heavyRain}%`} />
               </div>
             </div>
 

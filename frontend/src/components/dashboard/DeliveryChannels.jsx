@@ -1,10 +1,13 @@
 import React from "react";
 import { Globe, MessageCircle, Smartphone } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function DeliveryChannels() {
+  const { t } = useLanguage();
+
   return (
     <div className="glass-panel p-[22px] px-6 h-full flex flex-col gap-4">
-      <h2 className="font-display text-[16px] font-semibold mb-1">Advisory Delivery</h2>
+      <h2 className="font-display text-[16px] font-semibold mb-1">{t("channel_title", "Distribution Channels")}</h2>
       
       <ChannelRow 
         icon={<Globe size={15} />}
@@ -19,7 +22,7 @@ export default function DeliveryChannels() {
         icon={<MessageCircle size={15} />}
         iconBg="bg-[rgba(52,214,196,0.18)]"
         iconColor="text-teal-500"
-        name="WhatsApp"
+        name={t("channel_whatsapp", "WhatsApp Bot")}
         desc="Farmer group broadcast"
         count="48.9k"
       />
@@ -28,7 +31,7 @@ export default function DeliveryChannels() {
         icon={<Smartphone size={15} />}
         iconBg="bg-[rgba(245,158,11,0.10)]"
         iconColor="text-amber-500"
-        name="SMS"
+        name={t("channel_sms", "SMS Gateway")}
         desc="Low-connectivity regions"
         count="61.2k"
       />

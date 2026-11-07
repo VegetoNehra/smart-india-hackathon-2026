@@ -21,11 +21,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for frontend
+# Configure CORS for frontend (allows all domains including Vercel and local dev)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -36,4 +36,3 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "Monsoon Intelligence API is running"}
-

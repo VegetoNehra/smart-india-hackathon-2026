@@ -12,7 +12,13 @@ try:
 except ImportError:
     from backend.inference_pipeline import run_production_inference
 
+try:
+    from voice_assistant.routes import router as voice_router
+except ImportError:
+    from backend.voice_assistant.routes import router as voice_router
+
 router = APIRouter()
+router.include_router(voice_router)
 
 class ForecastPredictRequest(BaseModel):
     state: str = "Uttar Pradesh"
@@ -20,6 +26,7 @@ class ForecastPredictRequest(BaseModel):
     crop_name: str = "Rice"
     growth_stage: str = "Sowing"
     soil_moisture_pct: Optional[float] = 25.0
+    lang: Optional[str] = "en"
 
 @router.post("/forecast/predict")
 def predict_forecast(req: ForecastPredictRequest):
@@ -32,7 +39,8 @@ def predict_forecast(req: ForecastPredictRequest):
             prediction_date_str=req.prediction_date,
             crop_name=req.crop_name,
             growth_stage=req.growth_stage,
-            soil_moisture_pct=req.soil_moisture_pct
+            soil_moisture_pct=req.soil_moisture_pct,
+            lang=req.lang or "en"
         )
         return res
     except Exception as e:
@@ -44,7 +52,8 @@ def get_live_forecast(
     prediction_date: str = Query("2024-06-15", description="Prediction date (YYYY-MM-DD)"),
     crop_name: str = Query("Rice", description="Crop name"),
     growth_stage: str = Query("Sowing", description="Growth stage"),
-    soil_moisture_pct: Optional[float] = Query(25.0, description="Soil moisture percentage")
+    soil_moisture_pct: Optional[float] = Query(25.0, description="Soil moisture percentage"),
+    lang: Optional[str] = Query("en", description="Language code ('en' or 'hi')")
 ):
     """
     GET endpoint executing live production inference for dashboard widgets.
@@ -55,7 +64,8 @@ def get_live_forecast(
             prediction_date_str=prediction_date,
             crop_name=crop_name,
             growth_stage=growth_stage,
-            soil_moisture_pct=soil_moisture_pct
+            soil_moisture_pct=soil_moisture_pct,
+            lang=lang or "en"
         )
         return res
     except Exception as e:
@@ -83,3 +93,37 @@ def get_map_forecasts(db: Session = Depends(get_db)):
 def get_active_advisories(db: Session = Depends(get_db)):
     """Fetch all active advisories, sorted by newest first"""
     return db.query(Advisory).order_by(Advisory.created_at.desc()).all()
+
+@router.get("/crops")
+def get_supported_crops(state: Optional[str] = Query(None, description="Optional state name filter")):
+    """
+    Returns supported crops derived from official Indian state crop dataset.
+    """
+    import os, json
+    catalog_path = os.path.join(os.path.dirname(__file__), "..", "..", "advisory", "state_crops_catalog.json")
+    if os.path.exists(catalog_path):
+        try:
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                catalog = json.load(f)
+            if state and state in catalog:
+                return {
+                    "state": state,
+                    "crops": catalog[state]["crops"],
+                    "seasons": catalog[state]["seasons"]
+                }
+            all_crops = set()
+            for s, data in catalog.items():
+                all_crops.update(data["crops"])
+            return {
+                "state": "ALL",
+                "crops": sorted(list(all_crops)),
+                "total_states": len(catalog)
+            }
+        except Exception as e:
+            pass
+
+    return {
+        "state": "DEFAULT",
+        "crops": ["Rice", "Wheat", "Maize", "Cotton", "Soybean", "Sugarcane", "Gram", "Tur (Pigeon Pea)", "Groundnut", "Mustard", "Bajra", "Jowar", "Potato", "Onion"]
+    }
+

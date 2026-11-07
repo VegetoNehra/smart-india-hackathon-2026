@@ -382,7 +382,8 @@ def run_production_inference(
     crop_name: str = "Rice",
     growth_stage: str = "Sowing",
     soil_moisture_pct: Optional[float] = None,
-    rainfall_series_df: Optional[pd.DataFrame] = None
+    rainfall_series_df: Optional[pd.DataFrame] = None,
+    lang: str = "en"
 ) -> Dict[str, Any]:
     """
     End-to-End Production Inference Pipeline:
@@ -426,7 +427,7 @@ def run_production_inference(
 
     # 5. Execute Phase 6 Agricultural Advisory Engine
     advisory_engine = AdvisoryEngine()
-    advisory_output = advisory_engine.generate_advisory(forecast_probs, crop_ctx)
+    advisory_output = advisory_engine.generate_advisory(forecast_probs, crop_ctx, lang=lang)
 
     # 6. Format Complete Structured Forecast Response
     response = {

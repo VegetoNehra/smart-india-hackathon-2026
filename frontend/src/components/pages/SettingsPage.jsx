@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { Check, Settings, ShieldCheck, MapPin, Bell, Globe, LayoutGrid } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Check, Settings, ShieldCheck, MapPin, Bell, LayoutGrid, Save, CheckCircle2 } from "lucide-react";
 import clsx from "clsx";
 import SearchableSelect from "../common/SearchableSelect";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function SettingsPage({
   states = [],
@@ -11,33 +12,86 @@ export default function SettingsPage({
   onStateChange,
   onDistrictChange
 }) {
-  const [lang, setLang] = useState("en");
-  const [density, setDensity] = useState("compact");
-  const [techInfo, setTechInfo] = useState(true);
-  
-  const [alerts, setAlerts] = useState({
-    rainfall: true,
-    dryspell: true,
-    onset: true,
-    irrigation: false
+  const { language, setLanguage, t } = useLanguage();
+
+  // 1. Primary Crop State
+  const [crop, setCrop] = useState(() => {
+    return localStorage.getItem("monsoon_crop") || "Rice";
   });
+
+  // 2. Alert Notification Toggles State
+  const [alerts, setAlerts] = useState(() => {
+    const saved = localStorage.getItem("monsoon_alerts");
+    return saved ? JSON.parse(saved) : {
+      rainfall: true,
+      dryspell: true,
+      onset: true,
+      irrigation: false
+    };
+  });
+
+  // 3. Density & Tech Info State
+  const [density, setDensity] = useState(() => {
+    return localStorage.getItem("monsoon_density") || "compact";
+  });
+
+  const [techInfo, setTechInfo] = useState(() => {
+    const saved = localStorage.getItem("monsoon_tech_info");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // 4. Save Status Feedback Toast
+  const [savedSuccess, setSavedSuccess] = useState(false);
 
   const toggleAlert = (key) => {
     setAlerts(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleSaveSettings = () => {
+    localStorage.setItem("monsoon_crop", crop);
+    localStorage.setItem("monsoon_alerts", JSON.stringify(alerts));
+    localStorage.setItem("monsoon_density", density);
+    localStorage.setItem("monsoon_tech_info", JSON.stringify(techInfo));
+
+    setSavedSuccess(true);
+    setTimeout(() => {
+      setSavedSuccess(false);
+    }, 3000);
+  };
+
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-10">
       {/* Header */}
-      <div>
-        <div className="font-mono text-[11.5px] tracking-[.16em] text-teal-500 uppercase mb-1.5 flex items-center gap-2">
-          <Settings size={13} className="animate-spin" />
-          Application Preferences
+      <div className="flex justify-between items-start flex-wrap gap-4">
+        <div>
+          <div className="font-mono text-[11.5px] tracking-[.16em] text-teal-500 uppercase mb-1.5 flex items-center gap-2">
+            <Settings size={13} className="animate-spin text-teal-500" />
+            Application Preferences
+          </div>
+          <h1 className="font-display font-semibold text-[27px] tracking-[-0.01em] text-text-hi uppercase">
+            {t("settings_title", "SETTINGS")}
+          </h1>
+          <p className="text-text-mid text-[14px]">
+            {t("settings_subtitle", "Customize your Monsoon Intelligence experience")}
+          </p>
         </div>
-        <h1 className="font-display font-semibold text-[27px] tracking-[-0.01em] text-text-hi uppercase">
-          SETTINGS
-        </h1>
-        <p className="text-text-mid text-[14px]">Customize your Monsoon Intelligence experience</p>
+
+        {/* Save Button & Feedback Toast */}
+        <div className="flex items-center gap-3">
+          {savedSuccess && (
+            <div className="font-mono text-[12px] text-teal-600 bg-teal-500/10 border border-teal-500/30 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 animate-fadeIn">
+              <CheckCircle2 size={14} />
+              <span>{t("settings_saved", "Settings Saved Successfully!")}</span>
+            </div>
+          )}
+          <button
+            onClick={handleSaveSettings}
+            className="bg-gradient-to-br from-violet-500 to-violet-soft text-white font-mono text-[12px] font-semibold px-4.5 py-2 rounded-full shadow-[0_4px_14px_rgba(139,124,246,0.35)] flex items-center gap-2 cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+          >
+            <Save size={14} />
+            <span>{t("save_settings", "Save Preferences")}</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -47,27 +101,27 @@ export default function SettingsPage({
           {/* Default Location Card */}
           <div className="glass-panel p-5.5 flex flex-col gap-4">
             <h3 className="font-display font-semibold text-[15px] flex items-center gap-2 text-text-hi">
-              <MapPin size={16} className="text-violet-500" /> Default Location
+              <MapPin size={16} className="text-violet-500" /> {t("default_location", "Default Location")}
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5 font-sans">
-                <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">State</label>
+                <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">{t("select_state", "State")}</label>
                 <SearchableSelect 
                   options={states}
                   value={selectedStateId}
                   onChange={onStateChange}
-                  placeholder="Select State"
+                  placeholder={t("select_state", "Select State")}
                 />
               </div>
 
               <div className="flex flex-col gap-1.5 font-sans">
-                <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">District</label>
+                <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">{t("select_district", "District")}</label>
                 <SearchableSelect 
                   options={districts}
                   value={selectedDistrictId}
                   onChange={onDistrictChange}
-                  placeholder="Select District"
+                  placeholder={t("select_district", "Select District")}
                 />
               </div>
 
@@ -79,13 +133,25 @@ export default function SettingsPage({
           {/* Crop Preferences Card */}
           <div className="glass-panel p-5.5 flex flex-col gap-4">
             <h3 className="font-display font-semibold text-[15px] flex items-center gap-2 text-text-hi">
-              <ShieldCheck size={16} className="text-teal-500" /> Crop Preferences
+              <ShieldCheck size={16} className="text-teal-500" /> {t("crop_preferences", "Crop Preferences")}
             </h3>
-            <SelectBox 
-              label="Primary Crop" 
-              defaultValue="Rice" 
-              options={["Rice", "Wheat", "Maize", "Cotton", "Sugarcane", "Pulses"]} 
-            />
+            
+            <div className="flex flex-col gap-1.5 font-sans">
+              <label className="text-[10px] font-mono tracking-[.06em] uppercase text-text-lo">
+                {t("primary_crop", "Primary Crop")}
+              </label>
+              <select 
+                value={crop}
+                onChange={(e) => setCrop(e.target.value)} 
+                className="w-full bg-glass-fill2 border border-glass-borderSoft px-3 py-2 text-[13.5px] text-text-hi rounded-xl outline-none transition-all duration-200 hover:bg-glass-fill focus:ring-2 focus:ring-violet-500/50 focus:border-transparent cursor-pointer"
+              >
+                {["Rice", "Wheat", "Maize", "Cotton", "Sugarcane", "Pulses", "Soybean"].map((c) => (
+                  <option key={c} value={c}>
+                    {t(`crop_${c.toLowerCase()}`, c)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -94,34 +160,34 @@ export default function SettingsPage({
           {/* Alert Preferences */}
           <div className="glass-panel p-5.5 flex flex-col gap-4">
             <h3 className="font-display font-semibold text-[15px] flex items-center gap-2 text-text-hi">
-              <Bell size={16} className="text-rose-500" /> Alert Notifications
+              <Bell size={16} className="text-rose-500" /> {t("alert_notifications", "Alert Notifications")}
             </h3>
             
             <div className="flex flex-col gap-3 font-sans">
-              <ToggleRow label="Heavy Rainfall Alerts" active={alerts.rainfall} onClick={() => toggleAlert("rainfall")} />
-              <ToggleRow label="Dry Spell Alerts" active={alerts.dryspell} onClick={() => toggleAlert("dryspell")} />
-              <ToggleRow label="Monsoon Onset Alerts" active={alerts.onset} onClick={() => toggleAlert("onset")} />
-              <ToggleRow label="Irrigation Recommendations" active={alerts.irrigation} onClick={() => toggleAlert("irrigation")} />
+              <ToggleRow label={t("heavy_rain_alerts", "Heavy Rainfall Alerts")} active={alerts.rainfall} onClick={() => toggleAlert("rainfall")} />
+              <ToggleRow label={t("dry_spell_alerts", "Dry Spell Alerts")} active={alerts.dryspell} onClick={() => toggleAlert("dryspell")} />
+              <ToggleRow label={t("onset_alerts", "Monsoon Onset Alerts")} active={alerts.onset} onClick={() => toggleAlert("onset")} />
+              <ToggleRow label={t("irrigation_recs", "Irrigation Recommendations")} active={alerts.irrigation} onClick={() => toggleAlert("irrigation")} />
             </div>
           </div>
 
           {/* Display & Language Settings */}
           <div className="glass-panel p-5.5 flex flex-col gap-4">
             <h3 className="font-display font-semibold text-[15px] flex items-center gap-2 text-text-hi">
-              <LayoutGrid size={16} className="text-amber-500" /> Preferences & Display
+              <LayoutGrid size={16} className="text-amber-500" /> {t("preferences_display", "Preferences & Display")}
             </h3>
             
             {/* Language */}
             <div className="flex justify-between items-center py-1">
-              <span className="text-[13.5px] text-text-mid font-sans">Application Language</span>
+              <span className="text-[13.5px] text-text-mid font-sans">{t("app_language", "Application Language")}</span>
               <div className="flex gap-1">
                 {["en", "hi"].map((l) => (
                   <button
                     key={l}
-                    onClick={() => setLang(l)}
+                    onClick={() => setLanguage(l)}
                     className={clsx(
-                      "font-mono text-[10px] px-3 py-1 rounded-full cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 border",
-                      lang === l 
+                      "font-mono text-[10.5px] px-3 py-1 rounded-full cursor-pointer transition-all duration-200 transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 border font-semibold",
+                      language === l 
                         ? "bg-text-hi text-white border-transparent" 
                         : "bg-glass-fill2 border-glass-borderSoft text-text-mid hover:text-text-hi"
                     )}
@@ -134,7 +200,7 @@ export default function SettingsPage({
 
             {/* Density */}
             <div className="flex justify-between items-center py-1">
-              <span className="text-[13.5px] text-text-mid font-sans">Dashboard Density</span>
+              <span className="text-[13.5px] text-text-mid font-sans">{t("dashboard_density", "Dashboard Density")}</span>
               <div className="flex gap-1">
                 {["comfortable", "compact"].map((d) => (
                   <button
@@ -154,7 +220,7 @@ export default function SettingsPage({
             </div>
 
             {/* Show Tech Info */}
-            <ToggleRow label="Show Technical Climate Info" active={techInfo} onClick={() => setTechInfo(!techInfo)} />
+            <ToggleRow label={t("tech_info", "Show Technical Climate Info")} active={techInfo} onClick={() => setTechInfo(!techInfo)} />
 
           </div>
         </div>
